@@ -1,0 +1,2 @@
+# chatGTP_discordBot
+chatGTPとdiscordで戯れるためのボット
