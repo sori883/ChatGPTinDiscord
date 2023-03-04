@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const discord_js_1 = require("discord.js");
 const dotenv_1 = __importDefault(require("dotenv"));
 const openai_1 = require("openai");
+const character_1 = require("./roleplay/character");
 dotenv_1.default.config();
 const configuration = new openai_1.Configuration({
     apiKey: process.env.OPENAI_API_KEY,
@@ -17,25 +18,30 @@ const client = new discord_js_1.Client({ intents: [
         discord_js_1.GatewayIntentBits.GuildMessages
     ] });
 client.once('ready', async () => {
-    // 開始ログ出力する
     console.log('ready!!');
 });
 client.on('messageCreate', async (message) => {
     // botの発言はスルー
     if (message.author.bot)
         return;
+    // メンション以外はスルー
+    if (!message.mentions.users.has(client.user?.id || '')) {
+        return;
+    }
     try {
-        const completion = await openai.createCompletion({
-            model: 'text-davinci-003',
-            prompt: `${message.content}`,
+        const completion = await openai.createChatCompletion({
+            model: 'gpt-3.5-turbo',
+            messages: [
+                { 'role': 'system', 'content': character_1.character },
+                { 'role': 'user', 'content': message.content.trim() },
+            ],
             max_tokens: 1024,
-            stop: null,
             n: 1,
             temperature: 0.5,
         });
-        if (completion.data.choices[0].text === undefined)
+        if (completion.data.choices[0].message?.content === undefined)
             throw new Error();
-        await message.channel.send(completion.data.choices[0].text);
+        await message.reply(completion.data.choices[0].message?.content);
     }
     catch (err) {
         console.log(err);
